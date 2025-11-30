@@ -36,37 +36,23 @@ score_font = pygame.font.SysFont('arial', 32)
 
 # ==================== BAGIAN INI YANG HARUS ANDA GANTI ====================
 # Data game - GANTI dengan gambar dan pertanyaan Anda sendiri
+# Data tunggal berisi semua soal
 GAME_DATA = [
-    {
-        "image_path": ["mita1.png", "mita2.png", "mita3.png"],  # GANTI dengan path gambar Anda
-        "correct_answer": "Mita",
-        "options": ["Shinoa", "Emilia", "Mari", "Mita"],
-        "Clue": "Waifu Desta"
-    },
-    {
-        "image_path": ["mita1.png", "mita2.png", "mita3.png"],
-        "correct_answer": "Mita",
-        "options": ["Rem", "Akeno", "Mita", "Basil"],
-        "Clue": "Waifu Desta"
-    },
-    {
-        "image_path": ["mita1.png", "mita3.png", "mita4.png"],
-        "correct_answer": "Mita",
-        "options": ["Mita", "Boboiboy", "Rias", "Zenon"],
-        "Clue": "Waifu Desta"
-    },
-    {
-        "image_path": ["mita1.png", "mita2.png", "mita4.png"],
-        "correct_answer": "Mita",
-        "options": ["Katagaki", "Chitose", "Mita", "Elysia"],
-        "Clue": "Waifu Desta"
-    },
-    {
-        "image_path": ["mita3.png", "mita2.png", "mita4.png"],
-        "correct_answer": "Mita",
-        "options": ["Yuki", "Sparkle", "Furina", "Mita"],
-        "Clue": "Waifu Desta"
-    }
+    {"Nama": "Black Cat", "gambar": "Black Cat.jpg", "Clue" : "Pacar Spiderman"},
+    {"Nama": "Captain America", "gambar": "Captain America.jpg", "Clue" : "Perisai"},
+    {"Nama": "Daredevil", "gambar": "Daredevil.jpg", "Clue" : "Dr di Spiderman Far From Home"},
+    {"Nama": "Deadpool", "gambar": "Deadpool.jpg", "Clue" : "Pacar Spiderman"},
+    {"Nama": "Dr. Doom", "gambar": "Dr. Doom.jpg", "Clue" : "Villain Avengers Nanti"},
+    {"Nama": "Dr. Octopus", "gambar": "Dr. Octopus.jpg", "Clue" : "Gurita"},
+    {"Nama": "Falcon", "gambar": "Falcon.jpg", "Clue" : "Burung"},
+    {"Nama": "Hawkeye", "gambar": "Hawkeye.jpg", "Clue" : "Pemanah"},
+    {"Nama": "Magneto", "gambar": "Magneto.jpg", "Clue" : "Besi dan Listrik"},
+    {"Nama": "Moon Knight", "gambar": "Moon Knight.jpg", "Clue" : "Kepribadian Banyak"},
+    {"Nama": "Punisher", "gambar": "Punisher.jpg", "Clue" : "Gak Tau"},
+    {"Nama": "Thor", "gambar": "Thor.jpg", "Clue" : "Dewa Petir"},
+    {"Nama": "Vision", "gambar": "Vision.jpg", "Clue" : "Suami Wanda"},
+    {"Nama": "Winter Soldier", "gambar": "Winter Soldier.jpg", "Clue" : "Dingin"},
+    {"Nama": "Wolverine", "gambar": "Wolverine.jpg", "Clue" : "Cakar"},
 ]
 
 # Placeholder images jika gambar tidak ditemukan
@@ -133,7 +119,6 @@ class OptionButton(Button):
         self.is_wrong = False
         
     def draw(self, surface):
-
         # Pilih warna berdasarkan status
         if self.is_correct:
             color = GREEN
@@ -180,44 +165,13 @@ class Game:
         self.timer_start = 0
         self.game_active = False
         self.current_image_path = None
+        self.current_question_data = None
         
         # Load leaderboard
         self.leaderboard = self.load_leaderboard()
         
         # Setup buttons
         self.setup_buttons()
-    def draw_input_name_screen(self):
-        SCREEN.fill(DARK_BLUE)
-
-        # Judul
-        title = title_font.render("Masukkan Nama Anda", True, WHITE)
-        SCREEN.blit(title, title.get_rect(center=(SCREEN_WIDTH//2, 150)))
-
-        # Kotak input
-        box_rect = pygame.Rect(300, 260, 400, 60)
-        pygame.draw.rect(SCREEN, WHITE, box_rect, border_radius=10)
-        pygame.draw.rect(SCREEN, BLUE, box_rect, 3, border_radius=10)
-
-        # Teks input
-        text_surface = header_font.render(self.player_name, True, BLACK)
-        SCREEN.blit(text_surface, (box_rect.x + 15, box_rect.y + 10))
-
-        # Caret blinking
-        if self.input_active:
-            if time.time() - self.last_caret_time > 0.5:
-                self.caret_visible = not self.caret_visible
-                self.last_caret_time = time.time()
-
-            if self.caret_visible:
-                caret_x = box_rect.x + 15 + text_surface.get_width() + 3
-                caret_y = box_rect.y + 10
-                pygame.draw.line(SCREEN, BLACK, (caret_x, caret_y),
-                                (caret_x, caret_y + 40), 2)
-
-        # Info
-        info = option_font.render("Tekan ENTER untuk memulai game", True, YELLOW)
-        SCREEN.blit(info, info.get_rect(center=(SCREEN_WIDTH//2, 360)))
-
     
     def draw_input_name_screen(self):
         SCREEN.fill(DARK_BLUE)
@@ -251,7 +205,6 @@ class Game:
         info = option_font.render("Tekan ENTER untuk memulai game", True, YELLOW)
         SCREEN.blit(info, info.get_rect(center=(SCREEN_WIDTH//2, 360)))
 
-        
     def setup_buttons(self):
         # Home screen buttons
         button_width, button_height = 300, 60
@@ -318,42 +271,72 @@ class Game:
         self.current_question = 0
         self.score = 0
         self.correct_answers = 0
-        self.game_active = True
-        self.load_question()
-    
-    def load_question(self):
-        if self.current_question >= len(GAME_DATA):
+        self.used_images = set()
+        # ensure any pending USEREVENT timers are cleared
+        pygame.time.set_timer(pygame.USEREVENT, 0)
+        self.get_random_question()
+        
+    def get_random_question(self):
+        # Pilih soal acak
+        # Filter soal yang gambarnya belum digunakan
+        available = [q for q in GAME_DATA if q["gambar"] not in self.used_images]
+
+        # Jika habis → langsung end_game
+        if not available:
             self.end_game()
             return
-        
-        # Pilih gambar secara acak dari image_paths
-        image_path = GAME_DATA[self.current_question]["image_path"]
-        self.current_image_path = random.choice(image_path)
 
+        # Pilih random dari gambar yang masih tersedia
+        question = random.choice(available)
+        self.used_images.add(question["gambar"])
+
+        correct_answer = question["Nama"]
+
+        # Ambil daftar semua jawaban yang berbeda dari jawaban benar
+        wrong_options = [q["Nama"] for q in GAME_DATA if q["Nama"] != correct_answer]
+
+        # Ambil 3 jawaban salah secara random — aman karena GAME_DATA cukup besar
+        # (jika GAME_DATA kecil, you may want to add protection)
+        if len(wrong_options) < 3:
+            # isi ulang jika perlu (very defensive)
+            while len(wrong_options) < 3:
+                wrong_options.append(random.choice([q["Nama"] for q in GAME_DATA if q["Nama"] != correct_answer]))
+
+        wrong_choices = random.sample(wrong_options, 3)
+
+        # Gabungkan benar + salah dan acak
+        options = wrong_choices + [correct_answer]
+        random.shuffle(options)
+
+        # Simpan ke variabel
+        self.current_question_data = question     # ← PENTING: simpan seluruh objek soal
+        self.correct_answer = correct_answer
+        self.options = options
+        self.current_image_path = os.path.join("images", question["gambar"])
+
+        # Set game active dan timer START hanya sekali di sini
         self.time_left = 30
         self.timer_start = time.time()
+        self.game_active = True
+
+        # Buat tombol baru (ini mereset list tombol)
         self.create_option_buttons()
-    
+
     def create_option_buttons(self):
         self.option_buttons = []
         option_width, option_height = 350, 50
         spacing_x = 40
         spacing_y = 20
 
-        # Salin options dan acak urutannya untuk randomisasi jawaban
-        options = GAME_DATA[self.current_question]["options"][:]
-        random.shuffle(options)
-
         # total 2 kolom
         left_x = SCREEN_WIDTH//2 - option_width - spacing_x//2
         right_x = SCREEN_WIDTH//2 + spacing_x//2
 
-        # posisi mulai Y
-        start_y = 480  
+        start_y = 480
 
-        for i, option in enumerate(options):
+        for i, option in enumerate(self.options):
             x = left_x if i % 2 == 0 else right_x
-            y = start_y + (i//2) * (option_height + spacing_y)
+            y = start_y + (i // 2) * (option_height + spacing_y)
 
             btn = OptionButton(x, y, option_width, option_height, option, i)
             self.option_buttons.append(btn)
@@ -361,48 +344,61 @@ class Game:
     def check_answer(self, selected_option):
         if not self.game_active:
             return
-        
-        correct_answer = GAME_DATA[self.current_question]["correct_answer"]
-        
-        # Tandai jawaban yang benar dan salah
+
+        correct_answer = self.correct_answer
+
         for btn in self.option_buttons:
             if btn.text == correct_answer:
                 btn.is_correct = True
-            elif btn.text == selected_option and selected_option != correct_answer:
+            elif btn.text == selected_option:
                 btn.is_wrong = True
             btn.is_hovered = False
-        
-        # Beri skor jika benar
+
         if selected_option == correct_answer:
-            time_bonus = max(0, self.time_left)  # Bonus berdasarkan waktu tersisa
-            self.score += 10 + time_bonus // 3  # Base 10 + bonus waktu
+            time_bonus = max(0, self.time_left)
+            self.score += 10 + time_bonus // 3
             self.correct_answers += 1
 
+        # stop accepting input until next question
         self.game_active = False
-        pygame.time.set_timer(pygame.USEREVENT, 2000)  # Timer untuk lanjut ke soal berikutnya
-    
+
+        # set a one-shot timer to go to next question after 2s
+        pygame.time.set_timer(pygame.USEREVENT, 2000)
+
     def skip_question(self):
         if self.game_active:
             self.game_active = False
+            # ensure we clear any old timers
+            pygame.time.set_timer(pygame.USEREVENT, 0)
             self.next_question()
     
     def next_question(self):
+        # Stop the USEREVENT repeating (important!)
+        pygame.time.set_timer(pygame.USEREVENT, 0)
+
         self.current_question += 1
-        self.game_active = True
-        self.load_question()
-        pygame.time.set_timer(pygame.USEREVENT, 0)  # Hentikan timer
+        # Jika semua gambar sudah habis → end
+        if len(self.used_images) >= len(GAME_DATA):
+            self.end_game()
+            return
+        # load a new random question and set game_active True there
+        self.get_random_question()
     
     def end_game(self):
         self.state = "results"
         self.save_leaderboard()
     
     def update_timer(self):
-        if self.game_active and self.state == "gameplay":
+        if self.state == "gameplay" and self.game_active:
             elapsed = time.time() - self.timer_start
+            # use floor of elapsed so timer ticks once per second
             self.time_left = max(0, 30 - int(elapsed))
             
             if self.time_left == 0:
-                self.skip_question()
+                # prevent double-calls and ensure USEREVENT cleared
+                self.game_active = False
+                pygame.time.set_timer(pygame.USEREVENT, 0)
+                self.next_question()
     
     def draw_home_screen(self):
         # Background gradient
@@ -461,11 +457,8 @@ class Game:
         
         # Gambar pertanyaan
         try:
-            # ==================== BAGIAN INI YANG HARUS ANDA GANTI ====================
-            # GANTI dengan cara load gambar Anda yang sebenarnya
             image = pygame.image.load(self.current_image_path)
             image = pygame.transform.scale(image, (400, 300))
-            # =========================================================================
         except:
             # Fallback ke placeholder jika gambar tidak ditemukan
             image = create_placeholder_image(400, 300, 
@@ -475,11 +468,12 @@ class Game:
         image_rect = image.get_rect(center=(SCREEN_WIDTH//2, 250))
         SCREEN.blit(image, image_rect)
         
-        # Clue
-        Clue_text = option_font.render(f"Clue: {GAME_DATA[self.current_question]['Clue']}", True, YELLOW)
-        Clue_rect = Clue_text.get_rect(center=(SCREEN_WIDTH//2, 435))
-        SCREEN.blit(Clue_text, Clue_rect)
-        
+        # Tampilkan clue dari soal saat ini — jika belum ada, tampilkan string kosong
+        clue = self.current_question_data.get("Clue", "") if self.current_question_data else ""
+        clue_text = option_font.render(f"Clue: {clue}", True, YELLOW)
+        clue_rect = clue_text.get_rect(center=(SCREEN_WIDTH//2, 435))
+        SCREEN.blit(clue_text, clue_rect)
+                
         # Opsi jawaban
         for btn in self.option_buttons:
             btn.draw(SCREEN)
@@ -538,16 +532,6 @@ class Game:
         # Background
         SCREEN.fill(DARK_BLUE)
         
-        # Title
-        title_text = title_font.render("LEADERBOARD", True, YELLOW)
-        title_rect = title_text.get_rect(center=(SCREEN_WIDTH//2, 80))
-        SCREEN.blit(title_text, title_rect)
-        
-        # Header table
-        def draw_leaderboard_screen(self):
-            # Background
-            SCREEN.fill(DARK_BLUE)
-            
         # Title
         title_text = title_font.render("LEADERBOARD", True, YELLOW)
         title_rect = title_text.get_rect(center=(SCREEN_WIDTH//2, 80))
@@ -651,6 +635,7 @@ class Game:
                 if self.skip_button.is_clicked(mouse_pos, event):
                     self.skip_question()
                 
+                # hanya periksa klik opsi jika game_active True
                 if self.game_active:
                     for btn in self.option_buttons:
                         btn.check_hover(mouse_pos)
@@ -674,6 +659,8 @@ class Game:
             
             # Timer event untuk lanjut ke soal berikutnya
             if event.type == pygame.USEREVENT:
+                # clear timer (important) and move to next question
+                pygame.time.set_timer(pygame.USEREVENT, 0)
                 self.next_question()
         
         return True
