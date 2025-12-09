@@ -1,0 +1,135 @@
+#buatkan flowchart poster PDF untuk tugas kelompok
+
+START PROGRAM
+
+INISIALISASI GLOBAL:
+    init pygame
+    set W=950, H=650
+    buat screen
+    load warna, font
+    load data GAME_DATA
+    jika folder images tidak ada → buat folder
+
+CLASS Button:
+    function __init__(rect, text, color, hover)
+        simpan rect, text, warna normal & hover
+    function draw()
+        gambar tombol & teks di tengah
+    function click(event)
+        jika klik kiri & posisi di rect → return TRUE
+
+CLASS Game:
+    function __init__()
+        state = "home"
+        name = ""
+        input_active = False
+        current_q = 0
+        score = 0
+        correct = 0
+        used = set kosong
+        answered = None
+        panggil load_assets()
+        panggil load_leaderboard()
+        panggil setup_buttons()
+        panggil setup_handlers()
+
+    function load_assets()
+        coba load background Test.png
+        jika gagal → buat background warna biru
+
+    function load_image(path,size)
+        coba load gambar
+        jika gagal → tampilkan tulisan "Gambar tidak ditemukan"
+
+    function load_leaderboard()
+        jika file ada → load JSON
+        jika tidak → leaderboard = []
+
+    function save_leaderboard()
+        tambahkan data baru (name, score, correct, date)
+        urutkan berdasarkan score desc
+        simpan hanya 10 teratas ke JSON
+
+    function setup_buttons()
+        buat tombol:
+            home → Mulai Game, Leaderboard, Keluar
+            result → Main Lagi, Kembali
+            skip → Skip pada mode play
+
+    function setup_handlers()
+        mapping state ke fungsi draw
+        mapping state ke fungsi event
+
+    function start_game()
+        state = "play"
+        reset score, correct, current_q, used
+        next_question()
+
+    function next_question()
+        current_q++
+        jika current_q > max_q:
+            state = result
+            save_leaderboard()
+            RETURN
+        pilih soal acak yang belum dipakai
+        set answer
+        buat 3 opsi salah + 1 benar
+        acak options
+        reset timer 30 detik
+
+    function update_timer()
+        jika state=play:
+            hitung waktu berjalan
+            kurangi time_left
+            jika 0 → next_question()
+
+    DRAW FUNCTIONS:
+        draw_home()
+        draw_input()
+        draw_play()
+        draw_result()
+        draw_leader()
+
+    EVENT FUNCTIONS:
+        event_home(e)
+            jika klik mulai → state=input
+            jika leaderboard → state=leader
+            jika keluar → exit
+
+        event_input(e)
+            jika klik kotak → aktifkan input
+            jika ketik:
+                enter → start_game()
+                backspace → hapus
+                tambah karakter baru
+
+        event_play(e)
+            jika skip → next_question()
+            jika klik salah satu opsi:
+                set answered
+                jika benar → tambah skor
+                timer 0.7 detik → next_question()
+
+        event_result(e)
+            jika main lagi → start_game()
+            jika kembali → home
+
+        event_leader(e)
+            jika kembali → home
+
+    function update()
+        baca semua event
+        jalankan event handler sesuai state
+        update timer
+        draw state aktif
+        update display
+
+FUNCTION main():
+    buat folder images jika belum ada
+    buat clock
+    buat objek Game
+    LOOP:
+        game.update()
+        clock.tick(60)
+
+END PROGRAM
